@@ -27,8 +27,12 @@ export interface Stats {
   evasion: number;
 }
 
-/** Modificadores parciais de atributo (aditivos), como os de equipamentos/buffs. */
-export type StatMods = Partial<Stats>;
+/**
+ * Modificadores parciais de atributo (aditivos), como os de equipamentos/buffs.
+ * Permite `undefined` explicitamente para casar com os tipos inferidos do Zod
+ * sob exactOptionalPropertyTypes.
+ */
+export type StatMods = { [K in keyof Stats]?: number | undefined };
 
 export const STAT_KEYS: readonly (keyof Stats)[] = [
   'maxHp',
