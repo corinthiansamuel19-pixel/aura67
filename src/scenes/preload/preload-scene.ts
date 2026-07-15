@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '@/config/game-config';
 import { generateTextures } from '@/rendering/textures';
+import {
+  generateHeroTextures,
+  generateNpcTextures,
+  generateWeaponTextures,
+  registerHeroAnims,
+} from '@/rendering/actor';
 
 /**
  * PreloadScene — gera as texturas placeholder e exibe a barra de carregamento.
@@ -32,8 +38,12 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Gera todas as texturas procedurais (tiles, silhuetas, disco).
+    // Gera todas as texturas procedurais (tiles, herói, armas, silhuetas).
     generateTextures(this);
+    generateHeroTextures(this);
+    generateNpcTextures(this);
+    generateWeaponTextures(this);
+    registerHeroAnims(this);
 
     const barWidth = 440;
     const barX = cx - barWidth / 2;

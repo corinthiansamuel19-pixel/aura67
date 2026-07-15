@@ -13,6 +13,7 @@ import { Battle, type BattleAction, type BattleEvent } from '@/systems/combat/ba
 import { applyRewards, rollRewards } from '@/systems/loot';
 import { GameContext } from '@/game/context';
 import { shapeTexture } from '@/rendering/textures';
+import { heroIdleTexture, weaponTexture } from '@/rendering/actor';
 import { UI, hex } from '@/ui/theme';
 import { StatBar, makeButton } from '@/ui/widgets';
 
@@ -104,11 +105,21 @@ export class BattleScene extends Phaser.Scene {
     list.forEach((c, i) => {
       const x = n === 1 ? this.scale.width / 2 : startX + (spread / n) * i;
       const size = c.spriteShape === 'colossus' ? 120 : 68;
-      const sprite = this.add
-        .image(x, y, shapeTexture(c.spriteShape))
-        .setTint(hex(c.spriteColor))
-        .setDisplaySize(size, size);
-      if (!enemySide) sprite.setFlipY(false);
+      let sprite: Phaser.GameObjects.Image;
+      if (enemySide) {
+        sprite = this.add
+          .image(x, y, shapeTexture(c.spriteShape))
+          .setTint(hex(c.spriteColor))
+          .setDisplaySize(size, size);
+      } else {
+        // party como herói humano voltado para a frente + arma equipada
+        sprite = this.add.image(x, y, heroIdleTexture('down')).setScale(2);
+        const wId = c.memberId ? this.ctx.store.member(c.memberId)?.equipment.weapon : undefined;
+        const item = wId ? Items.get(wId) : undefined;
+        if (item && item.kind === 'weapon') {
+          this.add.image(x + 20, y + 2, weaponTexture(item.viz)).setScale(1.8).setDepth(6);
+        }
+      }
       sprite.setInteractive({ useHandCursor: true });
       sprite.on('pointerdown', () => this.onSpriteClick(c.id));
 

@@ -134,6 +134,7 @@ export const ItemSchema = z.discriminatedUnion('kind', [
     kind: z.literal('weapon'),
     statMods: StatModsSchema.default({}),
     element: z.string().optional(),
+    viz: z.enum(['sword', 'axe', 'spear', 'bow', 'dagger', 'staff', 'mace']).default('sword'),
   }),
   BaseItemSchema.extend({
     kind: z.literal('armor'),
@@ -201,6 +202,9 @@ export const NpcSchema = z.object({
   at: z.tuple([z.number().int(), z.number().int()]),
   dialogueId: z.string().optional(),
   color: z.string().default('#e8d9a0'),
+  sprite: z
+    .enum(['villager', 'guard', 'merchant', 'elder', 'knight', 'spectre'])
+    .default('villager'),
 });
 
 export const PortalSchema = z.object({

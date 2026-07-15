@@ -10,6 +10,7 @@ export default [
     rarity: 'common',
     value: 20,
     statMods: { atk: 6 },
+    viz: 'sword',
   }),
   defineItem({
     id: 'aura-blade',
@@ -20,6 +21,7 @@ export default [
     value: 120,
     element: 'aura',
     statMods: { atk: 10, mag: 6 },
+    viz: 'sword',
   }),
   defineItem({
     id: 'oak-staff',
@@ -29,6 +31,7 @@ export default [
     rarity: 'common',
     value: 25,
     statMods: { mag: 8, maxMp: 6 },
+    viz: 'staff',
   }),
   defineItem({
     id: 'scavenger-dagger',
@@ -38,6 +41,7 @@ export default [
     rarity: 'uncommon',
     value: 40,
     statMods: { atk: 5, spd: 6, critChance: 0.05 },
+    viz: 'dagger',
   }),
   // ── Armaduras ──
   defineItem({

@@ -89,6 +89,19 @@ export default [
   }),
 
   defineDialogue({
+    id: 'forest-hermit',
+    start: 'start',
+    nodes: [
+      {
+        id: 'start',
+        speaker: 'Eremita da Mata',
+        text: 'A floresta ainda respira sob a poeira da Aura. Pise leve, Aurífice — nem tudo aqui quer te devorar.',
+        next: null,
+      },
+    ],
+  }),
+
+  defineDialogue({
     id: 'merchant-ovid',
     start: 'start',
     nodes: [

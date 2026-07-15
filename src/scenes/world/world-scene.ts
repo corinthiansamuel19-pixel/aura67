@@ -4,7 +4,9 @@ import type { GameMap, Npc } from '@/data/schemas';
 import type { Facing } from '@/domain/game-state';
 import { SeededRng, deriveSeed } from '@core/rng';
 import { GameContext } from '@/game/context';
-import { TILE_SIZE, isWalkable, shapeTexture } from '@/rendering/textures';
+import { TILE_SIZE, isWalkable, shapeTexture, tileTextureKey } from '@/rendering/textures';
+import { heroIdleTexture, npcTexture, weaponTexture } from '@/rendering/actor';
+import { Items } from '@/data/registry/content';
 import { UI, hex } from '@/ui/theme';
 import { StatBar } from '@/ui/widgets';
 import type { MusicTheme } from '@/systems/audio';
@@ -24,7 +26,8 @@ export class WorldScene extends Phaser.Scene {
   private ctx!: GameContext;
   private map!: GameMap;
   private tiles: string[] = [];
-  private player!: Phaser.GameObjects.Image;
+  private player!: Phaser.GameObjects.Sprite;
+  private weapon!: Phaser.GameObjects.Image;
   private npcs: { npc: Npc; sprite: Phaser.GameObjects.Image }[] = [];
   private moving = false;
   private facing: Facing = 'down';
@@ -37,6 +40,10 @@ export class WorldScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private questText!: Phaser.GameObjects.Text;
   private partyBars: { hp: StatBar; mp: StatBar; name: Phaser.GameObjects.Text }[] = [];
+  private minimapDot?: Phaser.GameObjects.Rectangle;
+  private minimapScale = 4;
+  private minimapX = 0;
+  private minimapY = 0;
   private busOffs: Array<() => void> = [];
 
   constructor() {
@@ -64,6 +71,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupInput();
     this.buildHud();
 
+    this.buildMinimap();
     this.ctx.audio.startMusic((this.map.music as MusicTheme) ?? 'wilds');
     this.ctx.bus.emit('map:entered', { mapId: this.map.id });
 
@@ -100,9 +108,7 @@ export class WorldScene extends Phaser.Scene {
     for (let y = 0; y < this.map.height; y++) {
       for (let x = 0; x < this.map.width; x++) {
         const ch = this.tiles[y]?.[x] ?? '#';
-        this.add
-          .image(x * TILE_SIZE, y * TILE_SIZE, `tile-${ch}`)
-          .setOrigin(0, 0);
+        this.add.image(x * TILE_SIZE, y * TILE_SIZE, tileTextureKey(ch)).setOrigin(0, 0);
       }
     }
     // marca portais com um brilho de Aura
@@ -117,27 +123,81 @@ export class WorldScene extends Phaser.Scene {
 
   private renderNpcs(): void {
     this.npcs = this.map.npcs.map((npc) => {
-      const sprite = this.add
-        .image(npc.at[0] * TILE_SIZE + TILE_SIZE / 2, npc.at[1] * TILE_SIZE + TILE_SIZE / 2, shapeTexture('humanoid'))
-        .setTint(hex(npc.color))
-        .setDisplaySize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
+      const px = npc.at[0] * TILE_SIZE + TILE_SIZE / 2;
+      const py = npc.at[1] * TILE_SIZE + TILE_SIZE / 2;
+      let sprite: Phaser.GameObjects.Image;
+      if (npc.sprite === 'spectre') {
+        sprite = this.add
+          .image(px, py, shapeTexture('spectre'))
+          .setTint(hex(npc.color))
+          .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+          .setDepth(15);
+      } else {
+        sprite = this.add
+          .image(px, py, npcTexture(npc.sprite))
+          .setOrigin(0.5, 0.82)
+          .setScale(1.2)
+          .setDepth(15);
+      }
       this.add
-        .text(sprite.x, sprite.y - TILE_SIZE * 0.7, npc.name, {
+        .text(px, py - TILE_SIZE * 0.95, npc.name, {
           fontFamily: UI.fontMono,
           fontSize: '11px',
-          color: UI.textDim,
+          color: UI.gold,
         })
-        .setOrigin(0.5);
+        .setOrigin(0.5)
+        .setDepth(15);
       return { npc, sprite };
     });
   }
 
   private renderPlayer(x: number, y: number): void {
+    const px = x * TILE_SIZE + TILE_SIZE / 2;
+    const py = y * TILE_SIZE + TILE_SIZE / 2;
     this.player = this.add
-      .image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 'shape-hero')
-      .setTint(hex(UI.aura))
-      .setDisplaySize(TILE_SIZE * 0.82, TILE_SIZE * 0.82)
-      .setDepth(10);
+      .sprite(px, py, heroIdleTexture('down'))
+      .setOrigin(0.5, 0.82)
+      .setScale(1.25)
+      .setDepth(20);
+    this.weapon = this.add.image(px, py, weaponTexture(this.leaderWeaponViz())).setDepth(21).setScale(1);
+    this.applyFacing(this.facing);
+  }
+
+  private leaderWeaponViz(): string {
+    const wId = this.ctx.store.leader().equipment.weapon;
+    const item = wId ? Items.get(wId) : undefined;
+    return item && item.kind === 'weapon' ? item.viz : 'sword';
+  }
+
+  private animDir(): 'down' | 'up' | 'side' {
+    return this.facing === 'left' || this.facing === 'right' ? 'side' : this.facing;
+  }
+
+  /** Ajusta textura/flip/arma conforme a direção atual (parado). */
+  private applyFacing(dir: Facing): void {
+    this.facing = dir;
+    const ad = this.animDir();
+    this.player.setFlipX(dir === 'left');
+    if (!this.player.anims.isPlaying) this.player.setTexture(heroIdleTexture(ad));
+    this.positionWeapon();
+  }
+
+  private positionWeapon(): void {
+    if (!this.weapon) return;
+    const p = this.player;
+    const oy = -2;
+    let ox: number;
+    let behind = false;
+    if (this.facing === 'down') ox = 9;
+    else if (this.facing === 'up') {
+      ox = -9;
+      behind = true;
+    } else if (this.facing === 'right') ox = 10;
+    else ox = -10;
+    this.weapon.setFlipX(this.facing === 'left');
+    this.weapon.setPosition(p.x + ox, p.y + oy);
+    this.weapon.setDepth(behind ? 19 : 22);
+    this.weapon.setVisible(this.ctx.store.leader().equipment.weapon !== undefined);
   }
 
   private setupCamera(): void {
@@ -163,15 +223,42 @@ export class WorldScene extends Phaser.Scene {
     kb.on('keydown-E', () => this.interact());
     kb.on('keydown-I', () => this.openMenu());
     if (import.meta.env.DEV) {
-      // Debug (apenas dev): força um encontro de teste.
+      // Debug (apenas dev): B força encontro; 1-5 teletransportam entre mapas.
       kb.on('keydown-B', () => {
         if (!this.moving && !this.busy) this.beginBattle(['scrap-hound', 'ash-bandit']);
       });
+      const jumps: Record<string, string> = {
+        ONE: 'relicario',
+        TWO: 'ermo-cinzento',
+        THREE: 'fortim-cinza',
+        FOUR: 'floresta-murmura',
+        FIVE: 'fenda-borda',
+      };
+      for (const [key, mapId] of Object.entries(jumps)) {
+        kb.on(`keydown-${key}`, () => this.debugTeleport(mapId));
+      }
     }
   }
 
+  private debugTeleport(mapId: string): void {
+    if (this.busy || this.moving) return;
+    const target = Maps.get(mapId);
+    if (!target) return;
+    const spawn = target.spawns['start'] ?? Object.values(target.spawns)[0] ?? [2, 2];
+    this.ctx.store.state.location = { mapId, x: spawn[0], y: spawn[1], facing: 'down' };
+    this.scene.restart();
+  }
+
   override update(): void {
+    if (this.player) {
+      this.positionWeapon();
+      this.updateMinimap();
+    }
     if (this.moving || this.busy) return;
+    if (this.player.anims.isPlaying) {
+      this.player.anims.stop();
+      this.player.setTexture(heroIdleTexture(this.animDir()));
+    }
     let dir: Facing | null = null;
     if (this.cursors.left.isDown || this.keyMap.A?.isDown) dir = 'left';
     else if (this.cursors.right.isDown || this.keyMap.D?.isDown) dir = 'right';
@@ -193,12 +280,17 @@ export class WorldScene extends Phaser.Scene {
 
   private tryMove(dir: Facing): void {
     this.facing = dir;
+    this.player.setFlipX(dir === 'left');
     const { x, y } = this.playerCell();
     const { dx, dy } = DIRS[dir];
     const nx = x + dx;
     const ny = y + dy;
-    if (!isWalkable(this.tiles, nx, ny) || this.npcAt(nx, ny)) return;
+    if (!isWalkable(this.tiles, nx, ny) || this.npcAt(nx, ny)) {
+      this.player.setTexture(heroIdleTexture(this.animDir()));
+      return;
+    }
 
+    this.player.play(`hero-walk-${this.animDir()}`, true);
     this.moving = true;
     this.ctx.store.state.location = { mapId: this.map.id, x: nx, y: ny, facing: dir };
     this.tweens.add({
@@ -351,6 +443,64 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  private buildMinimap(): void {
+    const pad = 10;
+    const maxDim = Math.max(this.map.width, this.map.height);
+    this.minimapScale = Math.max(2, Math.floor(150 / maxDim));
+    const mw = this.map.width * this.minimapScale;
+    const mh = this.map.height * this.minimapScale;
+    this.minimapX = this.scale.width - mw - pad;
+    this.minimapY = 40;
+
+    const container = this.add.container(0, 0).setScrollFactor(0).setDepth(150);
+    const frame = this.add
+      .rectangle(this.minimapX - 3, this.minimapY - 3, mw + 6, mh + 6, hex('#0a0d10'), 0.85)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, hex(UI.panelBorder))
+      .setScrollFactor(0);
+    container.add(frame);
+
+    const g = this.add.graphics().setScrollFactor(0);
+    for (let y = 0; y < this.map.height; y++) {
+      for (let x = 0; x < this.map.width; x++) {
+        const ch = this.tiles[y]?.[x] ?? '#';
+        g.fillStyle(minimapColor(ch), 1);
+        g.fillRect(this.minimapX + x * this.minimapScale, this.minimapY + y * this.minimapScale, this.minimapScale, this.minimapScale);
+      }
+    }
+    container.add(g);
+
+    for (const p of this.map.portals) {
+      container.add(
+        this.add
+          .rectangle(this.minimapX + p.at[0] * this.minimapScale, this.minimapY + p.at[1] * this.minimapScale, this.minimapScale + 1, this.minimapScale + 1, hex(UI.aura))
+          .setOrigin(0, 0)
+          .setScrollFactor(0),
+      );
+    }
+    for (const n of this.map.npcs) {
+      container.add(
+        this.add
+          .rectangle(this.minimapX + n.at[0] * this.minimapScale, this.minimapY + n.at[1] * this.minimapScale, this.minimapScale + 1, this.minimapScale + 1, hex(UI.gold))
+          .setOrigin(0, 0)
+          .setScrollFactor(0),
+      );
+    }
+
+    this.minimapDot = this.add
+      .rectangle(0, 0, this.minimapScale + 2, this.minimapScale + 2, 0xffffff)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(151);
+    this.updateMinimap();
+  }
+
+  private updateMinimap(): void {
+    if (!this.minimapDot) return;
+    const { x, y } = this.playerCell();
+    this.minimapDot.setPosition(this.minimapX + x * this.minimapScale, this.minimapY + y * this.minimapScale);
+  }
+
   private refreshHud(): void {
     this.goldText.setText(`Ouro: ${this.ctx.store.state.gold}`);
     this.questText.setText(this.activeQuestLine());
@@ -384,6 +534,35 @@ export class WorldScene extends Phaser.Scene {
 
 import { computeStats } from '@/domain/party';
 import { Quests } from '@/data/registry/content';
+
+function minimapColor(ch: string): number {
+  switch (ch) {
+    case '#':
+    case 'H':
+    case 'O':
+      return 0x4a505a;
+    case 'T':
+    case 't':
+      return 0x2f6234;
+    case 'W':
+      return 0x1f5c8c;
+    case 'R':
+    case 'M':
+      return 0x8a8f98;
+    case '~':
+      return 0x2f7d86;
+    case '=':
+      return 0x5c626a;
+    case 'p':
+      return 0x9a7b4f;
+    case 's':
+      return 0xd8c58a;
+    case 'x':
+      return 0x8a6a42;
+    default:
+      return 0x5a8a4a;
+  }
+}
 
 function questLine(questId: string, stageIndex: number): string {
   const quest = Quests.get(questId);
