@@ -4,19 +4,28 @@ Desenvolvimento em **etapas lógicas**, uma por vez. Cada etapa é isoladamente 
 
 | # | Etapa | Objetivo | Status |
 |---|---|---|---|
-| **E1** | Scaffold & Boot | Projeto rodando na :3000 com tela de boot | ✅ **Concluída** |
-| **E2** | 🎯 Vertical Slice jogável | Mover no mapa → encontro → batalha por turnos → vitória → volta (dados mínimos + placeholders CC0). Primeira experiência divertida e integrada. | ⏳ Próxima |
-| **E3** | Pipeline data-driven | Schemas Zod, content-registry (glob), `content:check`, EventBus tipado, GameState serializável, asset manifest | ⬜ |
-| **E4** | Mundo & Exploração | Tilemaps (Tiled), múltiplos mapas, portais/streaming, NPCs, zonas de encontro | ⬜ |
-| **E5** | Combate: profundidade | Atributos, fórmulas testadas, iniciativa, IA por perfil, XP/nível, party de até 4 | ⬜ |
-| **E6** | Habilidades & Status | Skills data-driven (efeitos como uniões tipadas), buffs/debuffs/DoT, elementos/afinidades | ⬜ |
-| **E7** | Inventário & Equipamentos | Itens, equipar/recalcular atributos, uso em combate/mundo | ⬜ |
-| **E8** | Bestiário & Loot | Encounter/loot tables, elites e chefes | ⬜ |
-| **E9** | Diálogo & NPCs | Grafo de nós ramificado, flags de estado | ⬜ |
-| **E10** | Quests & Objetivos | Jornal, rastreamento automático por eventos | ⬜ |
-| **E11** | Save/Load & Persistência | IndexedDB, slots, autosave, migração de save, `storage.persist()` | ⬜ |
-| **E12** | Áudio, UI/UX & Acessibilidade | Audio manager, opções, a11y (cor/fonte/remap), i18n base | ⬜ |
-| **E13** | Conteúdo, Balanceamento, PWA & Release | Regiões/anéis, história, chefes, economia/lojas/crafting, PWA offline, otimização, QA, build | ⬜ |
+| **E1** | Scaffold & Boot | Projeto rodando na :3000 com tela de boot | ✅ Concluída |
+| **E2** | Vertical Slice jogável | Mover → encontro → batalha → vitória → volta | ✅ Concluída |
+| **E3** | Pipeline data-driven | Schemas Zod, content-registry (glob), `content:check`, EventBus, GameState | ✅ Concluída |
+| **E4** | Mundo & Exploração | Mapas em grade, portais, NPCs, zonas de encontro, HUD | ✅ Concluída |
+| **E5** | Combate: profundidade | Atributos, fórmulas testadas, iniciativa, IA por perfil, XP/nível, party de 4 | ✅ Concluída |
+| **E6** | Habilidades & Status | Skills data-driven (efeitos tipados), buffs/debuffs/DoT, elementos/afinidades | ✅ Concluída |
+| **E7** | Inventário & Equipamentos | Itens, equipar/recalcular atributos, uso em combate/campo | ✅ Concluída |
+| **E8** | Bestiário & Loot | Encounter/loot tables, elites e chefe (Colosso-Coroa) | ✅ Concluída |
+| **E9** | Diálogo & NPCs | Grafo de nós ramificado, flags, ações (quest/item/batalha) | ✅ Concluída |
+| **E10** | Quests & Objetivos | Jornal, rastreamento automático por eventos, multi-estágio | ✅ Concluída |
+| **E11** | Save/Load & Persistência | localStorage com envelope versionado + migração + 3 slots | ✅ Concluída |
+| **E12** | Áudio, UI/UX & Menus | Áudio procedural, opções (volumes/mudo), menus/HUD | ✅ Concluída |
+| **E13** | Conteúdo & Fluxos | Slice de Valdaura (4 mapas, 7 inimigos, 3 quests), título/vitória/game-over | 🟡 Slice jogável |
+
+**Fluxo completo jogável:** menu → Relicário → Ermo → Fortim → Fenda → chefe → vitória.
+
+## Expansões futuras (pós-MVP)
+- Economia/lojas/crafting (mercadores já existem como NPCs).
+- IndexedDB + `navigator.storage.persist()` + PWA/service worker para offline real.
+- Acessibilidade (paleta colorblind-safe, remap de teclas, escala de fonte), i18n.
+- Recrutamento de companheiros via diálogo; mais anéis/regiões, chefes-âncora e conteúdo.
+- Migração de renderizador para Phaser 4 (o núcleo headless já está desacoplado).
 
 ## Princípios que guiam todas as etapas
 

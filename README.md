@@ -1,57 +1,97 @@
 # aura67 — Crônicas de Valdaura
 
-RPG **2D por turnos**, single-player offline, web. Ambientação: **fantasia medieval + pós-apocalíptico** — uma civilização movida pela **Aura** (energia arcana) colapsou no **Ocaso**, e você é um **Aurífice** capaz de canalizá-la.
+RPG **2D por turnos**, single-player offline, para navegador. Ambientação: **fantasia medieval + pós-apocalíptico** — a civilização movida pela **Aura** (energia arcana = magia e máquina) colapsou no **Ocaso**; você é um **Aurífice**, raro capaz de canalizá-la, e cruza o reino agonizante de **Valdaura** rumo à Fenda.
 
-Projeto tratado como jogo comercial: qualidade, organização, performance e **escalabilidade de conteúdo**.
-
-## Stack
-
-- **TypeScript** (strict) — tipos fortes para conteúdo seguro
-- **Phaser 3** — engine 2D (cenas, tilemaps, input, áudio)
-- **Vite** — dev server / bundler, fixado na **porta 3000**
-- **Vitest** — testes da lógica pura (sem navegador)
-- **ESLint + Prettier** — qualidade e formatação
-- **Zod** (a partir da Etapa 3) — validação de conteúdo data-driven
+Projeto tratado como jogo comercial: qualidade, organização, performance e **escalabilidade de conteúdo** (adicionar inimigo/item/skill = editar dados, sem tocar em lógica).
 
 ## Como rodar
 
 Requer **Node >= 20**.
 
 ```bash
-npm install        # instala dependências
-npm run dev        # sobe o jogo em http://localhost:3000
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Abra <http://localhost:3000>. Você verá: **Boot → tela de carregamento (barra de Aura) → tela de título**.
+## Como jogar
+
+- **Mover:** Setas ou WASD
+- **Interagir / avançar diálogo:** E (mundo) · Espaço/clique (diálogo)
+- **Menu do jogo (party, inventário, jornal, opções, salvar):** I
+- **Combate:** por turnos — escolha Atacar / Habilidade / Item / Defender / Fugir; selecione o alvo clicando.
+
+**Objetivo:** desperte no Relicário, receba o Estilhaço do Cavaleiro Moribundo, cruze o **Ermo** até o **Fortim Cinza**, fale com a **Anciã Véu**, e enfrente o **Colosso-Coroa** na Borda da Fenda para selar o destino da Aura.
+
+## Stack
+
+- **TypeScript** (strict) · **Phaser 3** (renderização 2D) · **Vite** (porta 3000)
+- **Zod** (conteúdo data-driven validado) · **Vitest** (testes) · **ESLint + Prettier**
+
+## Arquitetura (resumo)
+
+Camadas com direção única de dependência; o **núcleo de regras não importa Phaser**:
+
+```
+src/
+├─ core/         # RNG semeado, event bus tipado, catálogo de eventos
+├─ shared/       # tipos e helpers puros (stats, ids)
+├─ domain/       # party, combatant, game-state (modelos puros)
+├─ data/
+│  ├─ schemas/   # schemas Zod (fonte da verdade do conteúdo)
+│  ├─ content/   # DADOS: elementos, status, skills, itens, classes,
+│  │             #        inimigos, mapas, diálogos, quests
+│  └─ registry/  # carregamento por glob + validação de integridade
+├─ systems/      # combate, progressão, inventário, loot, quests,
+│                # diálogo, save/load, áudio (TS puro/testável)
+├─ rendering/    # texturas placeholder procedurais
+├─ ui/           # tema + widgets
+├─ game/         # GameContext (store/quests/áudio)
+└─ scenes/       # Phaser: boot, preload, main-menu, world, battle,
+                 #         dialogue, menu, endings
+```
+
+Decisões em [`docs/adr/`](docs/adr/); etapas em [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Scripts
 
 | Script | O que faz |
 |---|---|
-| `npm run dev` | Dev server com HMR em `localhost:3000` |
-| `npm run build` | Typecheck (`tsc --noEmit`) + build de produção em `dist/` |
-| `npm run preview` | Serve o build de produção na porta 3000 |
-| `npm run typecheck` | Só a checagem de tipos |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier (escreve) |
-| `npm test` | Roda os testes (Vitest) |
+| `npm run dev` | Dev server (HMR) em `localhost:3000` |
+| `npm run build` | Typecheck + build de produção em `dist/` |
+| `npm test` | Testes unitários (Vitest) — inclui `content:check` |
+| `npm run content:check` | Valida integridade referencial do conteúdo |
+| `npm run lint` / `npm run format` | ESLint / Prettier |
 
-## Estrutura (Etapa 1)
+## Adicionar conteúdo (exemplo)
 
+Crie um arquivo em `src/data/content/enemies/` (ou adicione ao array existente):
+
+```ts
+import { defineEnemy } from '@/data/schemas';
+export default defineEnemy({
+  id: 'novo-inimigo',
+  name: 'Novo Inimigo',
+  baseStats: { maxHp: 30, maxMp: 0, atk: 8, def: 4, mag: 0, res: 2, spd: 7 },
+  skills: ['enemy-claw'],
+  xp: 15, gold: [4, 10],
+  drops: [{ itemId: 'scrap-metal', chance: 0.4 }],
+});
 ```
-aura67/
-├─ index.html              # entry do Vite
-├─ vite.config.ts          # porta 3000 + aliases + config do Vitest
-├─ tsconfig.json           # TypeScript strict + path aliases (@/*)
-├─ src/
-│  ├─ main.ts              # composition root (monta o Phaser + cenas)
-│  ├─ config/              # constantes globais (game-config)
-│  └─ scenes/              # boot / preload / title
-└─ docs/                   # roadmap + ADRs (decisões de arquitetura)
+
+O glob registra, o Zod valida e o `content:check` confere as referências — **sem tocar em código da engine**.
+
+## Verificação end-to-end (opcional)
+
+Um smoke test headless (Playwright) dirige o jogo e captura erros de runtime:
+
+```bash
+npx playwright install chromium   # uma vez
+npm run dev                        # em outro terminal
+node tests/e2e/smoke.mjs           # SHOT_DIR=<pasta> p/ screenshots
 ```
 
-A arquitetura completa (núcleo headless, conteúdo data-driven, camadas) está em [`docs/adr/`](docs/adr/) e o plano de etapas em [`docs/roadmap.md`](docs/roadmap.md).
+No mundo, a tecla **B** força um encontro de teste (apenas em dev).
 
 ## Configuração / segredos
 
-O arquivo `.env` (git-ignored) guarda apenas o token do GitHub para tooling — **não** é usado como config de runtime do jogo. Configuração do jogo vive em `src/config/`.
+O `.env` (git-ignored) guarda apenas o token do GitHub para tooling — não é config de runtime do jogo (essa vive em `src/config/`).

@@ -143,9 +143,16 @@ export class WorldScene extends Phaser.Scene {
   private setupCamera(): void {
     const w = this.map.width * TILE_SIZE;
     const h = this.map.height * TILE_SIZE;
-    this.cameras.main.setBounds(0, 0, w, h);
-    this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
-    this.cameras.main.setZoom(Math.min(2, Math.max(1, Math.floor(this.scale.height / h) || 1)));
+    const cam = this.cameras.main;
+    const zoom = Math.min(this.scale.width / w, (this.scale.height - 120) / h, 2.4);
+    cam.setZoom(zoom);
+    if (w * zoom <= this.scale.width && h * zoom <= this.scale.height) {
+      // mapa cabe inteiro na tela: centraliza e não precisa seguir
+      cam.centerOn(w / 2, h / 2);
+    } else {
+      cam.setBounds(0, 0, w, h);
+      cam.startFollow(this.player, true, 0.15, 0.15);
+    }
   }
 
   private setupInput(): void {
@@ -155,6 +162,12 @@ export class WorldScene extends Phaser.Scene {
     this.keyMap = kb.addKeys('W,A,S,D,E,I') as Record<string, Phaser.Input.Keyboard.Key>;
     kb.on('keydown-E', () => this.interact());
     kb.on('keydown-I', () => this.openMenu());
+    if (import.meta.env.DEV) {
+      // Debug (apenas dev): força um encontro de teste.
+      kb.on('keydown-B', () => {
+        if (!this.moving && !this.busy) this.beginBattle(['scrap-hound', 'ash-bandit']);
+      });
+    }
   }
 
   override update(): void {

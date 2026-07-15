@@ -7,7 +7,7 @@ import globals from 'globals';
 // (quando houver lógica de domínio para proteger); por ora, foco em correção
 // básica + integração com o Prettier.
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  { ignores: ['dist', 'node_modules', 'coverage', 'tests/e2e/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
