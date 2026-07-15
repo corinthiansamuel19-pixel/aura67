@@ -101,6 +101,11 @@ export class Battle {
     return [...this.order];
   }
 
+  /** Candidatos vivos para seleção de alvo, dado o lado (relativo ao ator). */
+  targetCandidates(actor: Combatant, side: Targeting['side']): Combatant[] {
+    return this.poolFor(actor, side);
+  }
+
   /* ─────────── alvos ─────────── */
 
   private poolFor(actor: Combatant, side: Targeting['side']): Combatant[] {

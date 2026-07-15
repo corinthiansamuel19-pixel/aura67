@@ -2,30 +2,38 @@ import Phaser from 'phaser';
 import { GAME_CONFIG } from '@/config/game-config';
 import { BootScene } from '@/scenes/boot/boot-scene';
 import { PreloadScene } from '@/scenes/preload/preload-scene';
-import { TitleScene } from '@/scenes/title/title-scene';
+import { MainMenuScene } from '@/scenes/main-menu/main-menu-scene';
+import { WorldScene } from '@/scenes/world/world-scene';
+import { BattleScene } from '@/scenes/battle/battle-scene';
+import { DialogueScene } from '@/scenes/dialogue/dialogue-scene';
+import { GameOverScene } from '@/scenes/endings/game-over-scene';
+import { VictoryScene } from '@/scenes/endings/victory-scene';
 
 /**
- * Composition root do jogo.
- *
- * Único lugar que monta a instância do Phaser e registra as cenas. A lógica de
- * regras/combate (núcleo headless) NÃO vive aqui e nunca importa Phaser — ela
- * será injetada nas cenas a partir das próximas etapas.
+ * Composition root. Monta a instância do Phaser e registra todas as cenas.
+ * A lógica de regras (núcleo headless) nunca importa Phaser.
  */
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: GAME_CONFIG.colors.background,
+  pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: GAME_CONFIG.width,
     height: GAME_CONFIG.height,
   },
-  render: {
-    pixelArt: true,
-    antialias: false,
-  },
-  scene: [BootScene, PreloadScene, TitleScene],
+  scene: [
+    BootScene,
+    PreloadScene,
+    MainMenuScene,
+    WorldScene,
+    BattleScene,
+    DialogueScene,
+    GameOverScene,
+    VictoryScene,
+  ],
 };
 
 new Phaser.Game(config);

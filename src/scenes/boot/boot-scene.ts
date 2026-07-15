@@ -1,13 +1,8 @@
 import Phaser from 'phaser';
+import { getAudio } from '@/game/context';
 
 /**
- * BootScene — primeiríssima cena. Ponto de entrada do fluxo de cenas.
- *
- * Responsabilidade: configurações globais leves e imediatas, e então
- * transicionar para o Preload. NÃO carrega assets pesados aqui.
- *
- * (Etapas futuras) registro de serviços do núcleo (RNG, EventBus, GameState),
- * input global e configuração de escala fina entram neste ponto.
+ * BootScene — primeira cena. Inicializa serviços globais (áudio) e vai ao Preload.
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -15,6 +10,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    getAudio(this); // instancia o AudioManager único no registry
     this.scene.start('Preload');
   }
 }

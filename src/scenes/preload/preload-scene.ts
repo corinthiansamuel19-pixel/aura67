@@ -1,14 +1,10 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '@/config/game-config';
+import { generateTextures } from '@/rendering/textures';
 
 /**
- * PreloadScene — tela de carregamento.
- *
- * Exibe a identidade do jogo e uma barra de progresso. Na Etapa 1 ainda não há
- * assets reais para carregar, então a barra é animada como placeholder honesto.
- *
- * (Etapa 3) o carregamento real (atlas de sprites, tilesets, áudio) via manifesto
- * entra aqui, ligando a barra ao evento `this.load.on('progress')`.
+ * PreloadScene — gera as texturas placeholder e exibe a barra de carregamento.
+ * (Etapa futura: carregamento de assets reais entra aqui.)
  */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -19,17 +15,15 @@ export class PreloadScene extends Phaser.Scene {
     const { colors } = GAME_CONFIG;
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-
     this.cameras.main.setBackgroundColor(colors.background);
 
     this.add
       .text(cx, cy - 90, 'AURA67', {
-        fontFamily: 'Georgia, "Times New Roman", serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '72px',
         color: colors.gold,
       })
       .setOrigin(0.5);
-
     this.add
       .text(cx, cy - 28, 'Crônicas de Valdaura', {
         fontFamily: 'Georgia, serif',
@@ -38,17 +32,16 @@ export class PreloadScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // Gera todas as texturas procedurais (tiles, silhuetas, disco).
+    generateTextures(this);
+
     const barWidth = 440;
-    const barHeight = 18;
     const barX = cx - barWidth / 2;
     const barY = cy + 40;
-
     const border = this.add.graphics();
     border.lineStyle(2, 0x3a4750, 1);
-    border.strokeRect(barX, barY, barWidth, barHeight);
-
+    border.strokeRect(barX, barY, barWidth, 18);
     const fill = this.add.graphics();
-
     const label = this.add
       .text(cx, barY + 44, 'Canalizando Aura... 0%', {
         fontFamily: 'monospace',
@@ -59,21 +52,20 @@ export class PreloadScene extends Phaser.Scene {
 
     const progress = { value: 0 };
     const auraColor = Phaser.Display.Color.HexStringToColor(colors.aura).color;
-
     this.tweens.add({
       targets: progress,
       value: 1,
-      duration: 1400,
+      duration: 1100,
       ease: 'Sine.easeInOut',
       onUpdate: () => {
         const v = progress.value;
         fill.clear();
         fill.fillStyle(auraColor, 1);
-        fill.fillRect(barX + 2, barY + 2, (barWidth - 4) * v, barHeight - 4);
+        fill.fillRect(barX + 2, barY + 2, (barWidth - 4) * v, 14);
         label.setText(`Canalizando Aura... ${Math.round(v * 100)}%`);
       },
       onComplete: () => {
-        this.time.delayedCall(220, () => this.scene.start('Title'));
+        this.time.delayedCall(160, () => this.scene.start('MainMenu'));
       },
     });
   }
