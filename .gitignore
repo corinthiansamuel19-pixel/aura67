@@ -1,0 +1,22 @@
+# ─── Segredos / variáveis de ambiente ──────────────────────────────
+# NUNCA remova estas linhas: elas impedem que o token vá parar no GitHub.
+.env
+.env.local
+.env.*.local
+*.env
+
+# Exceção: o arquivo de exemplo (sem segredo) pode ser versionado
+!.env.example
+
+# ─── Sistema / editor ──────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# ─── Dependências / build (comuns) ─────────────────────────────────
+node_modules/
+dist/
+build/
+__pycache__/
