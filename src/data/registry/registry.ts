@@ -70,7 +70,7 @@ export function buildRegistry<T extends { id: string }>(
         items.push(schema.parse(entry));
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
-        throw new Error(`[${kind}] conteúdo inválido em ${path}:\n${detail}`);
+        throw new Error(`[${kind}] conteúdo inválido em ${path}:\n${detail}`, { cause: err });
       }
     }
   }

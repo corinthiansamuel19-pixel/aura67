@@ -6,6 +6,7 @@ import { MainMenuScene } from '@/scenes/main-menu/main-menu-scene';
 import { WorldScene } from '@/scenes/world/world-scene';
 import { BattleScene } from '@/scenes/battle/battle-scene';
 import { DialogueScene } from '@/scenes/dialogue/dialogue-scene';
+import { GameMenuScene } from '@/scenes/menu/game-menu-scene';
 import { GameOverScene } from '@/scenes/endings/game-over-scene';
 import { VictoryScene } from '@/scenes/endings/victory-scene';
 
@@ -31,6 +32,7 @@ const config: Phaser.Types.Core.GameConfig = {
     WorldScene,
     BattleScene,
     DialogueScene,
+    GameMenuScene,
     GameOverScene,
     VictoryScene,
   ],
